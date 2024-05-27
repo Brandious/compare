@@ -1,12 +1,11 @@
-import { Box } from "@mui/material";
+import { CurrentUserProvider } from "./context/CurrentClientContext";
+import { Home } from "./pages";
 
 function App() {
   return (
-    <>
-      <Box>
-        <h1>React App</h1>
-      </Box>
-    </>
+    <CurrentUserProvider>
+      <Home />
+    </CurrentUserProvider>
   );
 }
 

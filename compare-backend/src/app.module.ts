@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { MongooseModule } from '@nestjs/mongoose';
-import { UserModule } from './user/user.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { InitModule } from './init/init.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AppService } from './app.service';
       },
     }),
     UserModule,
+    InitModule,
   ],
   controllers: [AppController],
   providers: [AppService], // Add this line

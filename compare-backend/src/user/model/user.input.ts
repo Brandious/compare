@@ -1,20 +1,21 @@
-import { OmitType } from '@nestjs/swagger';
-import { IsEmail, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateUserInput {
   @IsString()
   fullName: string;
 
-  @IsEmail()
-  email: string;
+  @Transform(({ value }) => new Date(value))
+  @IsDate()
+  birthDate: Date;
 
   @IsString()
-  bio: string;
+  city: string;
 
-  @IsString()
-  password: string;
+  @IsNumber()
+  vehiclePower: number;
+
+  @IsOptional()
+  @IsNumber()
+  voucher: number | null;
 }
-
-export class UpdateUserInput extends OmitType(CreateUserInput, [
-  'password',
-] as const) {}

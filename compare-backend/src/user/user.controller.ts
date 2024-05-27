@@ -37,6 +37,22 @@ export class UserController {
     return this.userService.updateUser(id, body);
   }
 
+  @Put('/:id/coverages')
+  addCoverages(
+    @Param('id') id: string,
+    @Body() coverage: { coverage: string },
+  ) {
+    return this.userService.addCoverages(id, coverage.coverage);
+  }
+
+  @Put('/:id/discounts')
+  addDiscounts(
+    @Param('id') id: string,
+    @Body() discount: { discount: string },
+  ) {
+    return this.userService.addDiscounts(id, discount.discount);
+  }
+
   @Delete('/:id')
   deleteUser(@Param('id') id: string) {
     return this.userService.deleteUser(id);
