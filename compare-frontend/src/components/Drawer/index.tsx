@@ -123,7 +123,7 @@ export default function PersistentDrawerRight({
                 />
               ))
             ) : (
-              <Typography>No coverages found</Typography>
+              <Typography>No discounts found</Typography>
             )}
           </FormGroup>
         </Toolbar>

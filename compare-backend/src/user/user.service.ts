@@ -22,13 +22,15 @@ export class UserService {
     createdUser.basePrice = await this.calculateBasePrice(
       createdUser.city,
       createdUser.birthDate,
-      body.voucher,
+      // body.voucher,
     );
 
     createdUser.coverages = [] as Coverage[];
     createdUser.discounts = [] as Discounts[];
+    createdUser.voucher = body.voucher ?? 0;
 
     createdUser.calculatedDiscounts = 0;
+    createdUser.calculatedCoverage = 0;
 
     if (body.vehiclePower > 100) {
       const discount = await this.initService.findDiscountByName(
@@ -43,35 +45,88 @@ export class UserService {
     }
 
     createdUser.finalPrice =
-      createdUser.basePrice - createdUser.calculatedDiscounts;
+      createdUser.basePrice -
+      createdUser.calculatedDiscounts -
+      createdUser.voucher;
+
+    if (createdUser.finalPrice < 0) createdUser.finalPrice = 0;
 
     const user = await createdUser.save();
     return user as UserPayload;
   }
 
-  calculateCoverages(user: UserPayload, coverage: Coverage): number {
-    const { calculatedDiscounts } = user;
+  async updateUser(id: string, body: CreateUserInput): Promise<UserPayload> {
+    const updatedUser = await this.userModel.findById(id);
 
-    let totalDiscount = calculatedDiscounts;
+    if (!updatedUser) {
+      throw new NotFoundException(`User with id:${id} not found`);
+    }
+
+    const userToUpdate = {
+      ...updatedUser.toObject(),
+      ...body,
+    } as UserPayload;
+
+    userToUpdate.basePrice = await this.calculateBasePrice(
+      userToUpdate.city,
+      new Date(userToUpdate.birthDate),
+    );
+
+    userToUpdate.coverages = [] as Coverage[];
+    userToUpdate.discounts = [] as Discounts[];
+    userToUpdate.voucher = body.voucher ?? 0;
+
+    userToUpdate.calculatedDiscounts = 0;
+    userToUpdate.calculatedCoverage = 0;
+
+    if (userToUpdate.vehiclePower > 100) {
+      const discount = await this.initService.findDiscountByName(
+        'Strong car surcharge',
+      );
+      userToUpdate.discounts.push(discount);
+
+      userToUpdate.calculatedDiscounts = this.calculateDiscounts(
+        userToUpdate,
+        discount,
+      );
+    }
+
+    userToUpdate.finalPrice =
+      userToUpdate.basePrice -
+      userToUpdate.calculatedDiscounts -
+      userToUpdate.voucher;
+
+    if (userToUpdate.finalPrice < 0) userToUpdate.finalPrice = 0;
+
+    await this.userModel.updateOne({ _id: id }, userToUpdate);
+    const userToReturn = await this.userModel.findById(id);
+
+    return userToReturn as UserPayload;
+  }
+
+  calculateCoverages(user: UserPayload, coverage: Coverage): number {
+    const { calculatedCoverage } = user;
+
+    let totalCoverage = calculatedCoverage;
 
     switch (coverage.name) {
       case 'Bonus Protection':
-        totalDiscount += user.basePrice * 0.12;
+        totalCoverage += user.basePrice * 0.12;
         break;
       case 'AO+':
-        totalDiscount +=
+        totalCoverage +=
           this.calculateAge(user.birthDate) > coverage.age
             ? coverage.maxPrice
             : coverage.minPrice;
         break;
       case 'Glass protection':
-        totalDiscount += user.vehiclePower * 0.2;
+        totalCoverage += user.vehiclePower * 0.8;
         break;
       default:
         break;
     }
 
-    return totalDiscount;
+    return totalCoverage;
   }
 
   calculateDiscounts(user: UserPayload, discount: Discounts): number {
@@ -90,12 +145,12 @@ export class UserService {
         } else throw new Error('Number of coverages is less than required');
         break;
       case 'VIP discount':
-        if (user.vehiclePower > discount.vehiclePower) {
+        if (user.vehiclePower >= discount.vehiclePower) {
           totalDiscount += user.basePrice * 0.05;
         } else throw new Error('Vehicle power is less than required');
         break;
       case 'Strong car surcharge':
-        if (user.vehiclePower > discount.vehiclePower) {
+        if (user.vehiclePower >= discount.vehiclePower) {
           totalDiscount += user.basePrice * 0.1;
         } else throw new Error('Vehicle power is less than required');
         break;
@@ -123,12 +178,12 @@ export class UserService {
         (cov) => cov.name !== coverageById.name,
       );
 
-      user.calculatedDiscounts = 0;
-      user.calculatedDiscounts = user.coverages.reduce(
+      user.calculatedCoverage = 0;
+      user.calculatedCoverage = user.coverages.reduce(
         (a, el) => a + this.calculateCoverages(user, el),
         0,
       );
-      user.finalPrice = user.basePrice + user.calculatedDiscounts;
+      user.finalPrice = user.basePrice + user.calculatedCoverage;
 
       if (
         user.coverages.length < 2 &&
@@ -143,7 +198,7 @@ export class UserService {
           0,
         );
 
-        user.finalPrice = user.basePrice + user.calculatedDiscounts;
+        user.finalPrice = user.finalPrice + user.calculatedDiscounts;
       }
 
       return await user.save();
@@ -157,8 +212,11 @@ export class UserService {
       user.calculatedDiscounts = this.calculateDiscounts(user, discount);
     }
 
-    user.calculatedDiscounts += this.calculateCoverages(user, coverageById);
-    user.finalPrice = user.basePrice - user.calculatedDiscounts;
+    user.calculatedCoverage += this.calculateCoverages(user, coverageById);
+    user.finalPrice =
+      user.basePrice + user.calculatedCoverage - user.calculatedDiscounts;
+    if (user.finalPrice < 0) user.finalPrice = 0;
+
     return await user.save();
   }
 
@@ -182,14 +240,19 @@ export class UserService {
         (a, el) => a + this.calculateDiscounts(user, el),
         0,
       );
-      user.finalPrice = user.basePrice + user.calculatedDiscounts;
+      user.finalPrice =
+        user.basePrice + user.calculatedDiscounts + user.calculatedCoverage;
       return await user.save();
     }
 
     user.discounts.push(discountById);
 
     user.calculatedDiscounts = this.calculateDiscounts(user, discountById);
-    user.finalPrice = user.basePrice - user.calculatedDiscounts;
+    user.finalPrice =
+      user.basePrice - user.calculatedDiscounts + user.calculatedCoverage;
+
+    if (user.finalPrice < 0) user.finalPrice = 0;
+
     return await user.save();
   }
 
@@ -215,12 +278,6 @@ export class UserService {
     return users as UserPayload[];
   }
 
-  async updateUser(id: string, body: CreateUserInput): Promise<UserPayload> {
-    await this.userModel.updateOne({ _id: id }, body);
-    const updatedUser = this.userModel.findById(id);
-    return updatedUser as UserPayload;
-  }
-
   async deleteUser(id: string): Promise<void> {
     await this.userModel.deleteOne({ _id: id });
   }
@@ -228,7 +285,7 @@ export class UserService {
   async calculateBasePrice(
     city: string,
     age: Date,
-    voucher?: number,
+    // voucher?: number,
   ): Promise<number> {
     // Add your logic to calculate the base price based on the city and age
     const years = this.calculateAge(age);
@@ -239,9 +296,9 @@ export class UserService {
       throw new NotFoundException(`City with id:${city} not found`);
     }
 
-    const voucherDiscount = voucher ? voucher : 0;
+    // const voucherDiscount = voucher ? voucher : 0;
 
-    return getCityById.basePrice * (1 + percentage) - voucherDiscount;
+    return getCityById.basePrice * (1 + percentage);
   }
 
   getPercentageBasedOnAge(age: number): number {

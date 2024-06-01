@@ -11,70 +11,32 @@ import {
 } from "@mui/material";
 import { useForm } from "react-hook-form";
 import { useCurrentUserContext } from "../../context/CurrentClientContext";
-import { UserSuccess } from "../../types/User";
 
 import React from "react";
+import { UserFormData, UserSuccess } from "../../types/User";
 
-export type UserFormData = {
-  name: string;
-  birthDate: Date;
-  city: string;
-  vehiclePower: number;
-  voucher?: number;
+type UserFormProps = {
+  onUpdate: (data: UserFormData) => void;
+  onSubmit: (data: UserFormData) => void;
+
+  user: UserSuccess | null;
 };
 
-export const UserForm = () => {
-  const { cities, mutation, setUser, user, updateMutation } =
-    useCurrentUserContext();
-  const { register, handleSubmit, setValue, watch } = useForm<UserFormData>({
-    defaultValues: {
-      name: user?.fullName,
-      birthDate: user?.birthDate ? new Date(user.birthDate) : undefined,
-      city: user?.city,
-      vehiclePower: user?.vehiclePower,
-      voucher: user?.voucher,
-    },
-  });
+export const UserForm = ({ onUpdate, onSubmit, user }: UserFormProps) => {
+  const { cities } = useCurrentUserContext();
 
-  const onSubmit = (data: UserFormData) => {
-    mutation.mutate(
-      {
-        fullName: data.name,
-        birthDate: data.birthDate,
-        city: data.city,
-        vehiclePower: Number(data.vehiclePower),
-        voucher: Number(data.voucher),
-      },
-      {
-        onSuccess: (data: UserSuccess) => {
-          setUser({ ...data });
-        },
-        onError: () => {
-          alert("Error creating user");
-        },
-      }
-    );
-  };
+  const { register, handleSubmit, setValue, watch } = useForm<UserFormData>();
 
-  const onUpdate = (data: UserFormData) => {
-    updateMutation.mutate(
-      {
-        fullName: data.name,
-        birthDate: data.birthDate,
-        city: data.city,
-        vehiclePower: Number(data.vehiclePower),
-        voucher: Number(data.voucher),
-      },
-      {
-        onSuccess: (data: UserSuccess) => {
-          setUser({ ...data });
-        },
-        onError: () => {
-          alert("Error creating user");
-        },
-      }
-    );
-  };
+  // Reset the form values whenever the user data changes
+  React.useEffect(() => {
+    if (user) {
+      setValue("name", user?.fullName);
+      setValue("birthDate", new Date(user.birthDate));
+      setValue("city", user?.city);
+      setValue("vehiclePower", user?.vehiclePower);
+      setValue("voucher", user?.voucher);
+    }
+  }, [user, setValue]);
 
   const date = watch("birthDate");
 

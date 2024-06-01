@@ -1,9 +1,15 @@
-import { createContext, useContext, useState } from "react";
-import { User, UserSuccess } from "../types/User";
-import { service } from "../service/axios";
+import {
+  Dispatch,
+  SetStateAction,
+  createContext,
+  useContext,
+  useState,
+} from "react";
 import { UseMutationResult, useMutation, useQuery } from "react-query";
-import { Skeleton, Snackbar } from "@mui/material";
+import { service } from "../service/axios";
+import { User, UserSuccess } from "../types/User";
 import { Coverages, Discounts } from "../utils/coverages";
+import { Skeleton, Snackbar } from "@mui/material";
 
 type Mutations = UseMutationResult<UserSuccess, unknown, User, unknown>;
 
@@ -19,6 +25,8 @@ type Cities = {
 const CurrentUserContext = createContext<{
   user: UserSuccess | null;
   setUser: (user: UserSuccess) => void;
+  error: boolean;
+  setError: Dispatch<SetStateAction<boolean>>;
   cities: Cities;
   discounts: Discounts[];
   coverages: Coverages[];
@@ -43,6 +51,7 @@ export const CurrentUserProvider = ({
   children: React.ReactNode;
 }) => {
   const [user, setUser] = useState<UserSuccess | null>(null);
+  const [error, setError] = useState(false);
 
   const mutations: Mutations = useMutation({
     mutationFn: async (user: User) => {
@@ -96,12 +105,13 @@ export const CurrentUserProvider = ({
   if (mutations.isError || getCities.isError || !getCities) {
     return <Snackbar message="Error saving user" />;
   }
-
   return (
     <CurrentUserContext.Provider
       value={{
         user: user,
         setUser: setUser,
+        error: error,
+        setError: setError,
         mutation: mutations,
         updateMutation: updateMutation,
         addDiscount: addDiscount,

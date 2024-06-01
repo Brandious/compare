@@ -17,7 +17,7 @@ export const Pricing = () => {
       <Stack gap={3}>
         <TextField
           label="Base price"
-          value={user.basePrice}
+          value={parseFloat((user.basePrice || 0).toFixed(2))}
           disabled
           sx={{
             "& .Mui-disabled": {
@@ -25,7 +25,6 @@ export const Pricing = () => {
               color: "text.primary",
               textFillColor: "black",
               "--webkit-text-fill-color": "black",
-              
 
               "&:before": {
                 borderBottom: 0,
@@ -44,7 +43,34 @@ export const Pricing = () => {
         />
         <TextField
           label="Discount"
-          value={user.calculatedDiscounts}
+          value={parseFloat((user.calculatedDiscounts || 0).toFixed(2))}
+          disabled
+          sx={{
+            "& .Mui-disabled": {
+              bgcolor: "background.default",
+              color: "text.primary",
+              textFillColor: "black",
+              "--webkit-text-fill-color": "black",
+
+              "&:before": {
+                borderBottom: 0,
+              },
+
+              "&:after": {
+                borderBottom: 0,
+              },
+
+              "& > input": {
+                color: "text.primary",
+                fontWeight: "bold",
+              },
+            },
+          }}
+        />
+
+        <TextField
+          label="Coverages"
+          value={parseFloat((user.calculatedCoverage || 0).toFixed(2))}
           disabled
           sx={{
             "& .Mui-disabled": {
@@ -70,7 +96,7 @@ export const Pricing = () => {
         />
         <TextField
           label="Final price"
-          value={user.finalPrice}
+          value={parseFloat((user.finalPrice || 0)?.toFixed(2))}
           disabled
           sx={{
             "& .Mui-disabled": {

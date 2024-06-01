@@ -29,6 +29,9 @@ export class User {
   calculatedDiscounts: number;
 
   @Prop()
+  calculatedCoverage: number;
+
+  @Prop()
   finalPrice: number;
 
   @Prop()

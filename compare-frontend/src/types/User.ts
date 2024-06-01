@@ -22,5 +22,16 @@ export type UserSuccess = {
   discounts?: Discounts[];
 
   calculatedDiscounts?: number;
+  calculatedCoverage?: number;
   finalPrice?: number;
+
+  updatedAt: string;
+};
+
+export type UserFormData = {
+  name: string;
+  birthDate: Date;
+  city: string;
+  vehiclePower: number;
+  voucher?: number;
 };
