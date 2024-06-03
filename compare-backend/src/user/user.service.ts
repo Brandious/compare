@@ -151,7 +151,7 @@ export class UserService {
         break;
       case 'Strong car surcharge':
         if (user.vehiclePower >= discount.vehiclePower) {
-          totalDiscount += user.basePrice * 0.1;
+          totalDiscount -= user.basePrice * 0.1;
         } else throw new Error('Vehicle power is less than required');
         break;
       default:
@@ -163,6 +163,7 @@ export class UserService {
 
   async addCoverages(id: string, coverage: string): Promise<UserPayload> {
     const user = await this.userModel.findById(id);
+
     if (!user) {
       throw new NotFoundException(`User with email id:${id} not found `);
     }
